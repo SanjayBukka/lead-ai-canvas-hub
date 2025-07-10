@@ -246,7 +246,10 @@ const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
     const newLeads = leads.filter(lead => lead.status === 'New');
     
     if (newLeads.length === 0) {
-      toast.warning('No new leads to process');
+      toast('No new leads to process', {
+        icon: '⚠️',
+        duration: 3000
+      });
       return;
     }
 
@@ -380,7 +383,10 @@ Your Success Team`
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     if (node.id === 'trigger') {
-      toast.info('This is the trigger node - it activates when new leads are created');
+      toast('This is the trigger node - it activates when new leads are created', {
+        icon: 'ℹ️',
+        duration: 3000
+      });
       return;
     }
     
