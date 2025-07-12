@@ -1,5 +1,3 @@
-
-
 import React, { useCallback, useState } from 'react';
 import {
   ReactFlow,
@@ -262,14 +260,20 @@ const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
         case 'email':
           console.log('Executing email workflow for', newLeads.length, 'leads');
           
-          // Default email template
+          // Enhanced email template
           const emailTemplate = {
             subject: 'Welcome! Let\'s discuss your needs',
             message: `Hello {{name}},
 
 Thank you for your interest in our services! We're excited to learn more about how we can help you achieve your goals.
 
-Our team will review your information and get back to you within 24 hours. In the meantime, feel free to reply to this email with any questions you might have.
+Our team specializes in providing tailored solutions that drive real results. Based on your inquiry, we believe we can help you:
+
+• Streamline your current processes
+• Increase efficiency and productivity  
+• Achieve your business objectives faster
+
+We'll review your information and get back to you within 24 hours with a personalized consultation. In the meantime, feel free to reply to this email with any specific questions or requirements you might have.
 
 Looking forward to connecting with you soon!
 
@@ -325,8 +329,11 @@ Welcome aboard! We're thrilled to have you join our community.
 We've received your information and our team is already working to provide you with the best possible experience. Here's what you can expect:
 
 • A personalized consultation within 24 hours
-• Access to our exclusive resources and guides
+• Access to our exclusive resources and guides  
 • Regular updates on solutions tailored to your needs
+• Priority support from our dedicated team
+
+We understand that every business is unique, and we're committed to providing solutions that fit your specific requirements. Our team will analyze your needs and prepare customized recommendations just for you.
 
 Thank you for choosing us. We're excited to help you succeed!
 

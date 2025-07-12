@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -31,7 +32,7 @@ const App: React.FC = () => {
     try {
       console.log('Fetching leads from backend...');
       setIsLoading(true);
-      const response = await axios.get('http://localhost:3001/api/leads', {
+      const response = await axios.get('http://localhost:8000/api/leads', {
         timeout: 30000,
         headers: {
           'Content-Type': 'application/json'
@@ -43,7 +44,7 @@ const App: React.FC = () => {
       setError(null);
     } catch (error: any) {
       console.error('Error fetching leads:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch leads';
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to fetch leads';
       setError(`Backend connection failed: ${errorMessage}`);
       toast.error(`Failed to fetch leads: ${errorMessage}`);
     } finally {
@@ -56,7 +57,7 @@ const App: React.FC = () => {
       console.log('Adding new lead:', leadData);
       setIsLoading(true);
       
-      const response = await axios.post('http://localhost:3001/api/leads', leadData, {
+      const response = await axios.post('http://localhost:8000/api/leads', leadData, {
         timeout: 30000,
         headers: {
           'Content-Type': 'application/json'
@@ -69,7 +70,7 @@ const App: React.FC = () => {
       setIsModalOpen(false);
     } catch (error: any) {
       console.error('Error adding lead:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to add lead';
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to add lead';
       
       if (error.response?.status === 409) {
         toast.error('A lead with this email already exists!', { duration: 4000 });
@@ -88,7 +89,7 @@ const App: React.FC = () => {
       console.log('Updating lead:', id, leadData);
       setIsLoading(true);
       
-      const response = await axios.put(`http://localhost:3001/api/leads/${id}`, leadData, {
+      const response = await axios.put(`http://localhost:8000/api/leads/${id}`, leadData, {
         timeout: 30000,
         headers: {
           'Content-Type': 'application/json'
@@ -100,7 +101,7 @@ const App: React.FC = () => {
       toast.success('Lead updated successfully!');
     } catch (error: any) {
       console.error('Error updating lead:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update lead';
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to update lead';
       toast.error(`Failed to update lead: ${errorMessage}`, { duration: 4000 });
     } finally {
       setIsLoading(false);
@@ -116,7 +117,7 @@ const App: React.FC = () => {
       console.log('Deleting lead:', id);
       setIsLoading(true);
       
-      await axios.delete(`http://localhost:3001/api/leads/${id}`, {
+      await axios.delete(`http://localhost:8000/api/leads/${id}`, {
         timeout: 30000,
         headers: {
           'Content-Type': 'application/json'
@@ -128,7 +129,7 @@ const App: React.FC = () => {
       toast.success('Lead deleted successfully!');
     } catch (error: any) {
       console.error('Error deleting lead:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete lead';
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to delete lead';
       toast.error(`Failed to delete lead: ${errorMessage}`, { duration: 4000 });
     } finally {
       setIsLoading(false);
@@ -140,7 +141,7 @@ const App: React.FC = () => {
       console.log('Sending email to lead:', leadId);
       setIsLoading(true);
       
-      const response = await axios.post(`http://localhost:3001/api/leads/${leadId}/email`, {
+      const response = await axios.post(`http://localhost:8000/api/leads/${leadId}/email`, {
         subject,
         message
       }, {
@@ -155,7 +156,7 @@ const App: React.FC = () => {
       toast.success('Email sent successfully!');
     } catch (error: any) {
       console.error('Error sending email:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to send email';
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to send email';
       
       if (errorMessage.includes('Email service not configured')) {
         toast.error('Email service not configured. Please set up Gmail SMTP credentials.', { duration: 6000 });
@@ -177,7 +178,7 @@ const App: React.FC = () => {
       
       const loadingToast = toast.loading('Processing document... This may take a moment.');
       
-      const response = await axios.post('http://localhost:3001/api/upload', formData, {
+      const response = await axios.post('http://localhost:8000/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
@@ -237,7 +238,7 @@ const App: React.FC = () => {
       
     } catch (error: any) {
       console.error('Error processing file:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to process file';
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to process file';
       
       if (error.code === 'ECONNABORTED') {
         toast.error('File processing timed out. Please try a smaller file or check your connection.', { duration: 6000 });
@@ -271,7 +272,7 @@ const App: React.FC = () => {
         payload.status = 'Contacted';
       }
       
-      const response = await axios.post('http://localhost:3001/api/workflow/execute', payload, {
+      const response = await axios.post('http://localhost:8000/api/workflow/execute', payload, {
         timeout: 120000,
         headers: {
           'Content-Type': 'application/json'
@@ -286,7 +287,7 @@ const App: React.FC = () => {
       
     } catch (error: any) {
       console.error('Error executing workflow:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to execute workflow';
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to execute workflow';
       toast.error(`Workflow failed: ${errorMessage}`, { duration: 4000 });
       throw error;
     } finally {
@@ -343,7 +344,7 @@ const App: React.FC = () => {
               <div>
                 <p className="text-red-800 font-medium">Connection Error</p>
                 <p className="text-red-600 text-sm">{error}</p>
-                <p className="text-red-500 text-xs mt-1">Make sure the backend server is running on port 3001</p>
+                <p className="text-red-500 text-xs mt-1">Make sure the backend server is running on port 8000</p>
               </div>
             </div>
             <button
@@ -437,7 +438,20 @@ const App: React.FC = () => {
               setEditingLead(null);
             }}
             onSendEmail={sendEmail}
-            onUpdateLead={editingLead ? updateLead : (id: string, data: Omit<Lead, 'id' | 'createdAt'>) => addLead(data)}
+            onUpdateLead={editingLead 
+              ? (id: string, data: Partial<Lead>) => updateLead(id, data)
+              : (id: string, data: Partial<Lead>) => {
+                  // For adding new leads, we need all required fields
+                  const fullLeadData: Omit<Lead, 'id' | 'createdAt'> = {
+                    name: data.name || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    status: data.status || 'New',
+                    source: data.source || 'Manual'
+                  };
+                  return addLead(fullLeadData);
+                }
+            }
           />
         )}
       </main>
