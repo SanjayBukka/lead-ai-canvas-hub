@@ -437,7 +437,7 @@ const App: React.FC = () => {
               setEditingLead(null);
             }}
             onSendEmail={sendEmail}
-            onUpdateLead={editingLead ? (id, data) => updateLead(id, data) : (id, data) => addLead(data)}
+            onUpdateLead={editingLead ? updateLead : (id: string, data: Omit<Lead, 'id' | 'createdAt'>) => addLead(data)}
           />
         )}
       </main>
