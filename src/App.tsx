@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -377,7 +378,7 @@ const App: React.FC = () => {
         </div>
 
         {/* File Upload */}
-        <LeadUpload onFileUpload={handleFileUpload} isLoading={isLoading} />
+        <LeadUpload onFileUpload={handleFileUpload} />
 
         {/* React Flow Canvas */}
         <div className="bg-white rounded-xl shadow-lg p-6">
@@ -394,7 +395,6 @@ const App: React.FC = () => {
           onEdit={setEditingLead} 
           onDelete={deleteLead}
           onSendEmail={sendEmail}
-          isLoading={isLoading}
         />
 
         {/* Lead Modal */}
@@ -406,7 +406,6 @@ const App: React.FC = () => {
               setEditingLead(null);
             }}
             onSave={editingLead ? (data) => updateLead(editingLead.id, data) : addLead}
-            isLoading={isLoading}
           />
         )}
       </main>
