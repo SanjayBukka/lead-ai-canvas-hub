@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
-import Header from './components/Header';
+import ImprovedHeader from './components/ImprovedHeader';
 import LeadForm from './components/LeadForm';
-import LeadUpload from './components/LeadUpload';
+import ImprovedLeadUpload from './components/ImprovedLeadUpload';
 import LeadTable from './components/LeadTable';
 import LeadModal from './components/LeadModal';
 import ReactFlowCanvas from './components/ReactFlowCanvas';
+import { Card, CardContent } from '@/components/ui/card';
+import { TabsContent, Tabs } from '@/components/ui/tabs';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export interface Lead {
   id: string;
@@ -373,91 +376,82 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       <Toaster />
       
-      <Header 
+      <ImprovedHeader 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         totalLeads={leads.length}
         newLeads={leads.filter(l => l.status === 'New').length}
+        onAddLead={() => setIsModalOpen(true)}
+        onFileUpload={() => document.getElementById('fileUploadTrigger')?.click()}
       />
       
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-6 py-8">
         {/* Error Display */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                <span className="text-red-600 text-sm">⚠</span>
-              </div>
-              <div>
-                <p className="text-red-800 font-medium">Connection Error</p>
-                <p className="text-red-600 text-sm">{error}</p>
-                <p className="text-red-500 text-xs mt-1">Make sure the backend server is running on port 8000</p>
-              </div>
-            </div>
-            <button
-              onClick={fetchLeads}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {activeTab === 'leads' && (
-          <>
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-4 justify-between items-center">
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  disabled={isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-                >
-                  <span>➕</span>
-                  <span>Add Lead</span>
-                </button>
-                
+          <Card className="mb-8 border-destructive/50 bg-destructive/10">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <div>
+                    <p className="font-medium text-destructive">Connection Error</p>
+                    <p className="text-sm text-destructive/80">{error}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Make sure the backend server is running on port 8000
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={fetchLeads}
-                  disabled={isLoading}
-                  className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors text-sm font-medium"
                 >
-                  <span>🔄</span>
-                  <span>{isLoading ? 'Loading...' : 'Refresh'}</span>
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
                 </button>
               </div>
+            </CardContent>
+          </Card>
+        )}
 
-              <div className="text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border">
-                {leads.length} total leads • {leads.filter(l => l.status === 'New').length} new • {leads.filter(l => l.status === 'Contacted').length} contacted
-              </div>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'leads' | 'workflow')}>
+          <TabsContent value="leads" className="space-y-8">
+            {/* File Upload */}
+            <div id="fileUploadTrigger">
+              <ImprovedLeadUpload 
+                onFileUpload={handleFileUpload} 
+                isUploading={isLoading}
+              />
             </div>
 
-            {/* File Upload */}
-            <LeadUpload onFileUpload={handleFileUpload} />
-
             {/* Leads Table */}
-            <LeadTable 
-              leads={leads} 
-              onViewLead={setSelectedLead}
-              onUpdateLead={updateLead}
-              onDeleteLead={deleteLead}
-              loading={isLoading}
-            />
-          </>
-        )}
+            <Card>
+              <CardContent className="p-0">
+                <LeadTable 
+                  leads={leads} 
+                  onViewLead={setSelectedLead}
+                  onUpdateLead={updateLead}
+                  onDeleteLead={deleteLead}
+                  loading={isLoading}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {activeTab === 'workflow' && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <ReactFlowCanvas 
-              leads={leads} 
-              onSendEmail={sendEmail}
-              onExecuteWorkflow={executeWorkflow}
-            />
-          </div>
-        )}
+          <TabsContent value="workflow">
+            <Card className="h-[calc(100vh-300px)]">
+              <CardContent className="p-6 h-full">
+                <ReactFlowCanvas 
+                  leads={leads} 
+                  onSendEmail={sendEmail}
+                  onExecuteWorkflow={executeWorkflow}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Lead Modal for viewing details */}
         {selectedLead && (
@@ -491,7 +485,6 @@ const App: React.FC = () => {
             onUpdateLead={editingLead 
               ? (id: string, data: Partial<Lead>) => updateLead(id, data)
               : (id: string, data: Partial<Lead>) => {
-                  // For adding new leads, we need all required fields
                   const fullLeadData: Omit<Lead, 'id' | 'createdAt'> = {
                     name: data.name || '',
                     email: data.email || '',
