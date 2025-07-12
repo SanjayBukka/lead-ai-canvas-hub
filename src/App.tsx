@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -23,6 +22,8 @@ const App: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'leads' | 'workflow'>('leads');
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
 
@@ -63,7 +64,7 @@ const App: React.FC = () => {
       });
       
       console.log('Lead added successfully:', response.data);
-      await fetchLeads(); // Refresh the leads list
+      await fetchLeads();
       toast.success('Lead added successfully!');
       setIsModalOpen(false);
     } catch (error: any) {
@@ -95,7 +96,7 @@ const App: React.FC = () => {
       });
       
       console.log('Lead updated successfully:', response.data);
-      await fetchLeads(); // Refresh the leads list
+      await fetchLeads();
       toast.success('Lead updated successfully!');
     } catch (error: any) {
       console.error('Error updating lead:', error);
@@ -123,7 +124,7 @@ const App: React.FC = () => {
       });
       
       console.log('Lead deleted successfully');
-      await fetchLeads(); // Refresh the leads list
+      await fetchLeads();
       toast.success('Lead deleted successfully!');
     } catch (error: any) {
       console.error('Error deleting lead:', error);
@@ -143,14 +144,14 @@ const App: React.FC = () => {
         subject,
         message
       }, {
-        timeout: 60000, // Longer timeout for email operations
+        timeout: 60000,
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
       console.log('Email sent successfully:', response.data);
-      await fetchLeads(); // Refresh to update lead status
+      await fetchLeads();
       toast.success('Email sent successfully!');
     } catch (error: any) {
       console.error('Error sending email:', error);
@@ -180,7 +181,7 @@ const App: React.FC = () => {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
-        timeout: 120000, // 2 minutes timeout for file processing
+        timeout: 120000,
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -202,7 +203,6 @@ const App: React.FC = () => {
         return;
       }
       
-      // Add extracted leads to the system
       let addedCount = 0;
       let skippedCount = 0;
       
@@ -272,14 +272,14 @@ const App: React.FC = () => {
       }
       
       const response = await axios.post('http://localhost:3001/api/workflow/execute', payload, {
-        timeout: 120000, // 2 minutes for batch operations
+        timeout: 120000,
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
       console.log('Workflow executed successfully:', response.data);
-      await fetchLeads(); // Refresh the leads list
+      await fetchLeads();
       
       const { results, processedLeads } = response.data;
       toast.success(`Workflow completed! Processed ${processedLeads} leads.`, { duration: 4000 });
@@ -288,7 +288,7 @@ const App: React.FC = () => {
       console.error('Error executing workflow:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to execute workflow';
       toast.error(`Workflow failed: ${errorMessage}`, { duration: 4000 });
-      throw error; // Re-throw so ReactFlowCanvas can handle it
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -325,7 +325,12 @@ const App: React.FC = () => {
         }}
       />
       
-      <Header />
+      <Header 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        totalLeads={leads.length}
+        newLeads={leads.filter(l => l.status === 'New').length}
+      />
       
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* Error Display */}
@@ -350,62 +355,89 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 justify-between items-center">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setIsModalOpen(true)}
-              disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-            >
-              <span>➕</span>
-              <span>Add Lead</span>
-            </button>
-            
-            <button
-              onClick={fetchLeads}
-              disabled={isLoading}
-              className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-            >
-              <span>🔄</span>
-              <span>{isLoading ? 'Loading...' : 'Refresh'}</span>
-            </button>
+        {activeTab === 'leads' && (
+          <>
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-4 justify-between items-center">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={isLoading}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                >
+                  <span>➕</span>
+                  <span>Add Lead</span>
+                </button>
+                
+                <button
+                  onClick={fetchLeads}
+                  disabled={isLoading}
+                  className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                >
+                  <span>🔄</span>
+                  <span>{isLoading ? 'Loading...' : 'Refresh'}</span>
+                </button>
+              </div>
+
+              <div className="text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border">
+                {leads.length} total leads • {leads.filter(l => l.status === 'New').length} new • {leads.filter(l => l.status === 'Contacted').length} contacted
+              </div>
+            </div>
+
+            {/* File Upload */}
+            <LeadUpload onFileUpload={handleFileUpload} />
+
+            {/* Leads Table */}
+            <LeadTable 
+              leads={leads} 
+              onViewLead={setSelectedLead}
+              onUpdateLead={updateLead}
+              onDeleteLead={deleteLead}
+              loading={isLoading}
+            />
+          </>
+        )}
+
+        {activeTab === 'workflow' && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <ReactFlowCanvas 
+              leads={leads} 
+              onSendEmail={sendEmail}
+              onExecuteWorkflow={executeWorkflow}
+            />
           </div>
+        )}
 
-          <div className="text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border">
-            {leads.length} total leads • {leads.filter(l => l.status === 'New').length} new • {leads.filter(l => l.status === 'Contacted').length} contacted
-          </div>
-        </div>
-
-        {/* File Upload */}
-        <LeadUpload onFileUpload={handleFileUpload} />
-
-        {/* React Flow Canvas */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <ReactFlowCanvas 
-            leads={leads} 
+        {/* Lead Modal for viewing details */}
+        {selectedLead && (
+          <LeadModal
+            lead={selectedLead}
+            isOpen={!!selectedLead}
+            onClose={() => setSelectedLead(null)}
             onSendEmail={sendEmail}
-            onExecuteWorkflow={executeWorkflow}
+            onUpdateLead={updateLead}
           />
-        </div>
+        )}
 
-        {/* Leads Table */}
-        <LeadTable 
-          leads={leads} 
-          onEdit={setEditingLead} 
-          onDelete={deleteLead}
-          onSendEmail={sendEmail}
-        />
-
-        {/* Lead Modal */}
+        {/* Lead Modal for adding/editing */}
         {(isModalOpen || editingLead) && (
           <LeadModal
-            lead={editingLead}
+            lead={editingLead || {
+              id: '',
+              name: '',
+              email: '',
+              phone: '',
+              status: 'New',
+              source: 'Manual',
+              createdAt: new Date().toISOString()
+            }}
+            isOpen={isModalOpen || !!editingLead}
             onClose={() => {
               setIsModalOpen(false);
               setEditingLead(null);
             }}
-            onSave={editingLead ? (data) => updateLead(editingLead.id, data) : addLead}
+            onSendEmail={sendEmail}
+            onUpdateLead={editingLead ? (id, data) => updateLead(id, data) : (id, data) => addLead(data)}
           />
         )}
       </main>
