@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import toast, { Toaster } from 'react-hot-toast';
+import { useToast } from '@/hooks/use-toast';
+import { Toaster } from '@/components/ui/toaster';
 import Header from './components/Header';
 import LeadForm from './components/LeadForm';
 import LeadUpload from './components/LeadUpload';
@@ -27,6 +27,7 @@ const App: React.FC = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const { toast } = useToast();
 
   const fetchLeads = async () => {
     try {
@@ -46,7 +47,11 @@ const App: React.FC = () => {
       console.error('Error fetching leads:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to fetch leads';
       setError(`Backend connection failed: ${errorMessage}`);
-      toast.error(`Failed to fetch leads: ${errorMessage}`);
+      toast({
+        title: "Error",
+        description: `Failed to fetch leads: ${errorMessage}`,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -66,18 +71,33 @@ const App: React.FC = () => {
       
       console.log('Lead added successfully:', response.data);
       await fetchLeads();
-      toast.success('Lead added successfully!');
+      toast({
+        title: "Success",
+        description: "Lead added successfully!",
+      });
       setIsModalOpen(false);
     } catch (error: any) {
       console.error('Error adding lead:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to add lead';
       
       if (error.response?.status === 409) {
-        toast.error('A lead with this email already exists!', { duration: 4000 });
+        toast({
+          title: "Error",
+          description: "A lead with this email already exists!",
+          variant: "destructive",
+        });
       } else if (error.response?.status === 400) {
-        toast.error(`Validation error: ${errorMessage}`, { duration: 4000 });
+        toast({
+          title: "Validation Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
       } else {
-        toast.error(`Failed to add lead: ${errorMessage}`, { duration: 4000 });
+        toast({
+          title: "Error",
+          description: `Failed to add lead: ${errorMessage}`,
+          variant: "destructive",
+        });
       }
     } finally {
       setIsLoading(false);
@@ -98,11 +118,18 @@ const App: React.FC = () => {
       
       console.log('Lead updated successfully:', response.data);
       await fetchLeads();
-      toast.success('Lead updated successfully!');
+      toast({
+        title: "Success",
+        description: "Lead updated successfully!",
+      });
     } catch (error: any) {
       console.error('Error updating lead:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to update lead';
-      toast.error(`Failed to update lead: ${errorMessage}`, { duration: 4000 });
+      toast({
+        title: "Error",
+        description: `Failed to update lead: ${errorMessage}`,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -126,11 +153,18 @@ const App: React.FC = () => {
       
       console.log('Lead deleted successfully');
       await fetchLeads();
-      toast.success('Lead deleted successfully!');
+      toast({
+        title: "Success",
+        description: "Lead deleted successfully!",
+      });
     } catch (error: any) {
       console.error('Error deleting lead:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to delete lead';
-      toast.error(`Failed to delete lead: ${errorMessage}`, { duration: 4000 });
+      toast({
+        title: "Error",
+        description: `Failed to delete lead: ${errorMessage}`,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -153,15 +187,26 @@ const App: React.FC = () => {
       
       console.log('Email sent successfully:', response.data);
       await fetchLeads();
-      toast.success('Email sent successfully!');
+      toast({
+        title: "Success",
+        description: "Email sent successfully!",
+      });
     } catch (error: any) {
       console.error('Error sending email:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to send email';
       
       if (errorMessage.includes('Email service not configured')) {
-        toast.error('Email service not configured. Please set up Gmail SMTP credentials.', { duration: 6000 });
+        toast({
+          title: "Configuration Error",
+          description: "Email service not configured. Please set up Gmail SMTP credentials.",
+          variant: "destructive",
+        });
       } else {
-        toast.error(`Failed to send email: ${errorMessage}`, { duration: 4000 });
+        toast({
+          title: "Error",
+          description: `Failed to send email: ${errorMessage}`,
+          variant: "destructive",
+        });
       }
     } finally {
       setIsLoading(false);
@@ -176,7 +221,10 @@ const App: React.FC = () => {
       console.log('Uploading file for processing:', file.name);
       setIsLoading(true);
       
-      const loadingToast = toast.loading('Processing document... This may take a moment.');
+      toast({
+        title: "Processing",
+        description: "Processing document... This may take a moment.",
+      });
       
       const response = await axios.post('http://localhost:8000/api/upload', formData, {
         headers: {
@@ -192,14 +240,13 @@ const App: React.FC = () => {
       });
       
       console.log('File processed successfully:', response.data);
-      toast.dismiss(loadingToast);
       
       const extractedLeads = response.data.leads || [];
       
       if (extractedLeads.length === 0) {
-        toast('No leads found in the document. Please check the file content.', {
-          icon: '⚠️',
-          duration: 4000
+        toast({
+          title: "No Leads Found",
+          description: "No leads found in the document. Please check the file content.",
         });
         return;
       }
@@ -226,13 +273,16 @@ const App: React.FC = () => {
       }
       
       if (addedCount > 0) {
-        toast.success(`Successfully extracted and added ${addedCount} leads from ${file.name}!`, { duration: 5000 });
+        toast({
+          title: "Success",
+          description: `Successfully extracted and added ${addedCount} leads from ${file.name}!`,
+        });
       }
       
       if (skippedCount > 0) {
-        toast('Some leads were skipped (duplicates or invalid data)', {
-          icon: 'ℹ️',
-          duration: 4000
+        toast({
+          title: "Info",
+          description: "Some leads were skipped (duplicates or invalid data)",
         });
       }
       
@@ -241,13 +291,29 @@ const App: React.FC = () => {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to process file';
       
       if (error.code === 'ECONNABORTED') {
-        toast.error('File processing timed out. Please try a smaller file or check your connection.', { duration: 6000 });
+        toast({
+          title: "Timeout Error",
+          description: "File processing timed out. Please try a smaller file or check your connection.",
+          variant: "destructive",
+        });
       } else if (errorMessage.includes('Unsupported file type')) {
-        toast.error('Please upload PDF or image files only.', { duration: 4000 });
+        toast({
+          title: "File Type Error",
+          description: "Please upload PDF or image files only.",
+          variant: "destructive",
+        });
       } else if (errorMessage.includes('No text found')) {
-        toast.error('Could not extract text from the file. Please ensure the document contains readable text.', { duration: 5000 });
+        toast({
+          title: "Text Extraction Error",
+          description: "Could not extract text from the file. Please ensure the document contains readable text.",
+          variant: "destructive",
+        });
       } else {
-        toast.error(`Failed to process file: ${errorMessage}`, { duration: 4000 });
+        toast({
+          title: "Processing Error",
+          description: `Failed to process file: ${errorMessage}`,
+          variant: "destructive",
+        });
       }
     } finally {
       setIsLoading(false);
@@ -283,12 +349,19 @@ const App: React.FC = () => {
       await fetchLeads();
       
       const { results, processedLeads } = response.data;
-      toast.success(`Workflow completed! Processed ${processedLeads} leads.`, { duration: 4000 });
+      toast({
+        title: "Workflow Complete",
+        description: `Workflow completed! Processed ${processedLeads} leads.`,
+      });
       
     } catch (error: any) {
       console.error('Error executing workflow:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to execute workflow';
-      toast.error(`Workflow failed: ${errorMessage}`, { duration: 4000 });
+      toast({
+        title: "Workflow Error",
+        description: `Workflow failed: ${errorMessage}`,
+        variant: "destructive",
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -301,30 +374,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: '#4ade80',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            duration: 5000,
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+      <Toaster />
       
       <Header 
         activeTab={activeTab}

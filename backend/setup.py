@@ -1,69 +1,129 @@
 
 #!/usr/bin/env python3
 """
-Setup script for Lead Management Backend
+Setup script for the FastAPI Lead Management Backend
 """
 import os
-import pandas as pd
+import sys
+import subprocess
+import platform
 
-def create_directories():
-    """Create necessary directories"""
-    directories = ['uploads', 'data']
-    for directory in directories:
-        if not os.path.exists(directory):
-            os.makedirs(directory, exist_ok=True)
-            print(f"✅ Created directory: {directory}")
-        else:
-            print(f"✅ Directory exists: {directory}")
+def run_command(command, description):
+    """Run a command and handle errors"""
+    print(f"🔄 {description}...")
+    try:
+        result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+        print(f"✅ {description} completed successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ {description} failed: {e}")
+        print(f"Error output: {e.stderr}")
+        return False
 
-def create_csv_file():
-    """Create empty CSV file if it doesn't exist"""
-    csv_file = 'leads.csv'
-    if not os.path.exists(csv_file):
-        df = pd.DataFrame(columns=['id', 'name', 'email', 'phone', 'status', 'source', 'createdAt'])
-        df.to_csv(csv_file, index=False)
-        print(f"✅ Created CSV file: {csv_file}")
-    else:
-        print(f"✅ CSV file exists: {csv_file}")
+def install_system_dependencies():
+    """Install system dependencies based on the platform"""
+    system = platform.system().lower()
+    
+    if system == "linux":
+        print("🐧 Detected Linux system")
+        commands = [
+            "sudo apt-get update",
+            "sudo apt-get install -y tesseract-ocr tesseract-ocr-eng poppler-utils"
+        ]
+        for cmd in commands:
+            if not run_command(cmd, f"Installing system dependencies: {cmd}"):
+                return False
+    
+    elif system == "darwin":  # macOS
+        print("🍎 Detected macOS system")
+        # Check if Homebrew is installed
+        if subprocess.run("which brew", shell=True, capture_output=True).returncode != 0:
+            print("❌ Homebrew not found. Please install Homebrew first:")
+            print("   /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+            return False
+        
+        commands = [
+            "brew install tesseract poppler"
+        ]
+        for cmd in commands:
+            if not run_command(cmd, f"Installing system dependencies: {cmd}"):
+                return False
+    
+    elif system == "windows":
+        print("🪟 Detected Windows system")
+        print("⚠️  Please manually install:")
+        print("   1. Tesseract OCR: https://github.com/UB-Mannheim/tesseract/wiki")
+        print("   2. Poppler: https://blog.alivate.com.au/poppler-windows/")
+        print("   3. Add both to your system PATH")
+        input("Press Enter after installing the above dependencies...")
+    
+    return True
 
-def create_env_template():
-    """Create environment template"""
-    env_template = """# Gmail SMTP Configuration
+def create_env_file():
+    """Create .env file if it doesn't exist"""
+    env_file = ".env"
+    if not os.path.exists(env_file):
+        env_content = """# Gmail SMTP Configuration
 GMAIL_USER=your-email@gmail.com
 GMAIL_PASS=your-app-password
 
-# Gemini AI Configuration (Optional)
-GEMINI_API_KEY=your-gemini-api-key
-
 # Server Configuration
-PORT=3001
-FLASK_ENV=development
+PORT=8000
+NODE_ENV=development
 """
-    
-    if not os.path.exists('.env.example'):
-        with open('.env.example', 'w') as f:
-            f.write(env_template)
-        print('✅ Created .env.example file')
+        with open(env_file, 'w') as f:
+            f.write(env_content)
+        print("✅ Created .env file")
+        print("⚠️  Please update .env with your Gmail credentials")
+    else:
+        print("✅ .env file already exists")
 
 def main():
-    print('🚀 Setting up Lead Management Python Backend...\n')
+    """Main setup function"""
+    print("🚀 Setting up FastAPI Lead Management Backend")
+    print("=" * 50)
     
-    create_directories()
-    create_csv_file()
-    create_env_template()
+    # Check Python version
+    if sys.version_info < (3, 8):
+        print("❌ Python 3.8 or higher is required")
+        sys.exit(1)
     
-    print('\n🎉 Setup complete!')
-    print('\n📝 Next steps:')
-    print('1. Copy .env.example to .env and add your credentials')
-    print('2. Install dependencies: pip install -r requirements.txt')
-    print('3. Install system dependencies:')
-    print('   - Ubuntu/Debian: sudo apt-get install tesseract-ocr')
-    print('   - macOS: brew install tesseract')
-    print('4. Start the server: python app.py')
-    print('\n💡 For Gmail SMTP, you need to:')
-    print('   - Enable 2-factor authentication on your Gmail account')
-    print('   - Generate an App Password for this application')
-    print('   - Use the App Password (not your regular password)')
+    print(f"✅ Python {sys.version.split()[0]} detected")
+    
+    # Install system dependencies
+    if not install_system_dependencies():
+        print("❌ Failed to install system dependencies")
+        sys.exit(1)
+    
+    # Install Python dependencies
+    if not run_command("pip install -r requirements.txt", "Installing Python dependencies"):
+        print("❌ Failed to install Python dependencies")
+        sys.exit(1)
+    
+    # Create directories
+    os.makedirs("uploads", exist_ok=True)
+    print("✅ Created uploads directory")
+    
+    # Create CSV file
+    csv_file = "leads.csv"
+    if not os.path.exists(csv_file):
+        with open(csv_file, 'w') as f:
+            f.write("id,name,email,phone,status,source,createdAt\n")
+        print("✅ Created leads.csv file")
+    
+    # Create .env file
+    create_env_file()
+    
+    print("\n" + "=" * 50)
+    print("🎉 Setup completed successfully!")
+    print("\n📝 Next steps:")
+    print("1. Update .env file with your Gmail credentials")
+    print("2. Start the server: python main.py")
+    print("3. Test the API: http://localhost:8000/api/health")
+    print("\n💡 For Gmail SMTP:")
+    print("   - Enable 2-factor authentication")
+    print("   - Generate an App Password")
+    print("   - Use the App Password (not regular password)")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
