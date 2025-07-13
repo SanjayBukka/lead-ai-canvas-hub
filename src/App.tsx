@@ -23,7 +23,7 @@ export interface Lead {
 }
 
 // Configure API base URL based on environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const App: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -58,7 +58,7 @@ const App: React.FC = () => {
       let errorMessage = 'Failed to fetch leads';
       
       if (error.code === 'ERR_NETWORK') {
-        errorMessage = `Cannot connect to backend server at ${API_BASE_URL}`;
+        errorMessage = `Cannot connect to backend server at ${API_BASE_URL}. Please ensure the Python backend is running on port 3001.`;
       } else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
       } else if (error.message) {
@@ -367,7 +367,7 @@ const App: React.FC = () => {
                     <p className="font-medium text-destructive">Backend Connection Error</p>
                     <p className="text-sm text-destructive/80">{error}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Make sure the backend server is running: <code>cd backend && python main.py</code>
+                      Make sure the backend server is running: <code>cd backend && python app.py</code>
                     </p>
                   </div>
                 </div>
