@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
@@ -22,7 +23,6 @@ export interface Lead {
   createdAt: string;
 }
 
-// Configure API base URL based on environment
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const App: React.FC = () => {
@@ -35,7 +35,6 @@ const App: React.FC = () => {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const { toast } = useToast();
 
-  // Create axios instance with proper configuration
   const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 30000,
@@ -58,7 +57,7 @@ const App: React.FC = () => {
       let errorMessage = 'Failed to fetch leads';
       
       if (error.code === 'ERR_NETWORK') {
-        errorMessage = `Cannot connect to backend server at ${API_BASE_URL}. Please ensure the Python backend is running on port 3001.`;
+        errorMessage = `Cannot connect to backend server at ${API_BASE_URL}. Please ensure the Python backend is running: cd backend && python app.py`;
       } else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
       } else if (error.message) {
@@ -356,7 +355,6 @@ const App: React.FC = () => {
       />
       
       <main className="container mx-auto px-6 py-8">
-        {/* Error Display */}
         {error && (
           <Card className="mb-8 border-destructive/50 bg-destructive/10">
             <CardContent className="p-6">
@@ -385,7 +383,6 @@ const App: React.FC = () => {
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'leads' | 'workflow')}>
           <TabsContent value="leads" className="space-y-8">
-            {/* File Upload */}
             <div id="fileUploadTrigger">
               <ImprovedLeadUpload 
                 onFileUpload={handleFileUpload} 
@@ -393,7 +390,6 @@ const App: React.FC = () => {
               />
             </div>
 
-            {/* Leads Table */}
             <Card>
               <CardContent className="p-0">
                 <LeadTable 
@@ -420,7 +416,6 @@ const App: React.FC = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Lead Modal for viewing details */}
         {selectedLead && (
           <LeadModal
             lead={selectedLead}
@@ -431,7 +426,6 @@ const App: React.FC = () => {
           />
         )}
 
-        {/* Lead Modal for adding/editing */}
         {(isModalOpen || editingLead) && (
           <LeadModal
             lead={editingLead || {
