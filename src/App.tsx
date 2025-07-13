@@ -22,6 +22,9 @@ export interface Lead {
   createdAt: string;
 }
 
+// Configure API base URL based on environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const App: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,27 +35,40 @@ const App: React.FC = () => {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const { toast } = useToast();
 
+  // Create axios instance with proper configuration
+  const apiClient = axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 30000,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
   const fetchLeads = async () => {
     try {
-      console.log('Fetching leads from backend...');
+      console.log('Fetching leads from:', `${API_BASE_URL}/api/leads`);
       setIsLoading(true);
-      const response = await axios.get('http://localhost:8000/api/leads', {
-        timeout: 30000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await apiClient.get('/api/leads');
       
       console.log('Leads fetched successfully:', response.data);
       setLeads(response.data);
       setError(null);
     } catch (error: any) {
       console.error('Error fetching leads:', error);
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to fetch leads';
-      setError(`Backend connection failed: ${errorMessage}`);
+      let errorMessage = 'Failed to fetch leads';
+      
+      if (error.code === 'ERR_NETWORK') {
+        errorMessage = `Cannot connect to backend server at ${API_BASE_URL}`;
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
       toast({
-        title: "Error",
-        description: `Failed to fetch leads: ${errorMessage}`,
+        title: "Connection Error",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -65,12 +81,7 @@ const App: React.FC = () => {
       console.log('Adding new lead:', leadData);
       setIsLoading(true);
       
-      const response = await axios.post('http://localhost:8000/api/leads', leadData, {
-        timeout: 30000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await apiClient.post('/api/leads', leadData);
       
       console.log('Lead added successfully:', response.data);
       await fetchLeads();
@@ -85,14 +96,8 @@ const App: React.FC = () => {
       
       if (error.response?.status === 409) {
         toast({
-          title: "Error",
+          title: "Duplicate Lead",
           description: "A lead with this email already exists!",
-          variant: "destructive",
-        });
-      } else if (error.response?.status === 400) {
-        toast({
-          title: "Validation Error",
-          description: errorMessage,
           variant: "destructive",
         });
       } else {
@@ -112,12 +117,7 @@ const App: React.FC = () => {
       console.log('Updating lead:', id, leadData);
       setIsLoading(true);
       
-      const response = await axios.put(`http://localhost:8000/api/leads/${id}`, leadData, {
-        timeout: 30000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await apiClient.put(`/api/leads/${id}`, leadData);
       
       console.log('Lead updated successfully:', response.data);
       await fetchLeads();
@@ -147,12 +147,7 @@ const App: React.FC = () => {
       console.log('Deleting lead:', id);
       setIsLoading(true);
       
-      await axios.delete(`http://localhost:8000/api/leads/${id}`, {
-        timeout: 30000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      await apiClient.delete(`/api/leads/${id}`);
       
       console.log('Lead deleted successfully');
       await fetchLeads();
@@ -178,14 +173,9 @@ const App: React.FC = () => {
       console.log('Sending email to lead:', leadId);
       setIsLoading(true);
       
-      const response = await axios.post(`http://localhost:8000/api/leads/${leadId}/email`, {
+      const response = await apiClient.post(`/api/leads/${leadId}/email`, {
         subject,
         message
-      }, {
-        timeout: 60000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
       });
       
       console.log('Email sent successfully:', response.data);
@@ -229,17 +219,11 @@ const App: React.FC = () => {
         description: "Processing document... This may take a moment.",
       });
       
-      const response = await axios.post('http://localhost:8000/api/upload', formData, {
+      const response = await apiClient.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
         timeout: 120000,
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            console.log(`Upload progress: ${percentCompleted}%`);
-          }
-        }
       });
       
       console.log('File processed successfully:', response.data);
@@ -296,19 +280,7 @@ const App: React.FC = () => {
       if (error.code === 'ECONNABORTED') {
         toast({
           title: "Timeout Error",
-          description: "File processing timed out. Please try a smaller file or check your connection.",
-          variant: "destructive",
-        });
-      } else if (errorMessage.includes('Unsupported file type')) {
-        toast({
-          title: "File Type Error",
-          description: "Please upload PDF or image files only.",
-          variant: "destructive",
-        });
-      } else if (errorMessage.includes('No text found')) {
-        toast({
-          title: "Text Extraction Error",
-          description: "Could not extract text from the file. Please ensure the document contains readable text.",
+          description: "File processing timed out. Please try a smaller file.",
           variant: "destructive",
         });
       } else {
@@ -341,12 +313,7 @@ const App: React.FC = () => {
         payload.status = 'Contacted';
       }
       
-      const response = await axios.post('http://localhost:8000/api/workflow/execute', payload, {
-        timeout: 120000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await apiClient.post('/api/workflow/execute', payload);
       
       console.log('Workflow executed successfully:', response.data);
       await fetchLeads();
@@ -397,10 +364,10 @@ const App: React.FC = () => {
                 <div className="flex items-center space-x-3">
                   <AlertCircle className="h-5 w-5 text-destructive" />
                   <div>
-                    <p className="font-medium text-destructive">Connection Error</p>
+                    <p className="font-medium text-destructive">Backend Connection Error</p>
                     <p className="text-sm text-destructive/80">{error}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Make sure the backend server is running on port 8000
+                      Make sure the backend server is running: <code>cd backend && python main.py</code>
                     </p>
                   </div>
                 </div>
@@ -409,7 +376,7 @@ const App: React.FC = () => {
                   className="inline-flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors text-sm font-medium"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  Retry
+                  Retry Connection
                 </button>
               </div>
             </CardContent>

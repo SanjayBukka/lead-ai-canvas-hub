@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -33,16 +32,25 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Lead Management API",
-    description="Advanced Lead Management System with AI-powered automation",
-    version="2.0.0"
+    description="Advanced Lead Management System with AI-powered automation", 
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# CORS Configuration
+# Enhanced CORS Configuration for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173", 
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "https://localhost:3000",
+        "https://localhost:5173"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -347,22 +355,39 @@ async def send_email_smtp(to_email: str, subject: str, message: str, lead_name: 
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
 # API Routes
+@app.get("/")
+async def root():
+    """Root endpoint with API information"""
+    return {
+        "message": "Lead Management API is running",
+        "version": "2.0.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
+
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint"""
+    """Enhanced health check endpoint"""
     return {
         'status': 'OK',
         'timestamp': datetime.now().isoformat(),
         'message': 'Lead Management FastAPI is running',
-        'version': '2.0.0'
+        'version': '2.0.0',
+        'endpoints': {
+            'leads': '/api/leads',
+            'upload': '/api/upload',
+            'workflow': '/api/workflow/execute',
+            'docs': '/docs'
+        }
     }
 
 @app.get("/api/leads", response_model=List[Lead])
 async def get_leads():
-    """Get all leads"""
+    """Get all leads with proper error handling"""
     try:
         logger.info('Fetching all leads...')
         leads = read_leads_from_csv()
+        logger.info(f'Retrieved {len(leads)} leads')
         return leads
     except Exception as e:
         logger.error(f"Error fetching leads: {e}")
@@ -641,4 +666,10 @@ if __name__ == "__main__":
     logger.info("✅ Server ready to accept connections!")
     
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "main:app", 
+        host="0.0.0.0", 
+        port=8000, 
+        reload=True,
+        log_level="info"
+    )
